@@ -1,0 +1,13 @@
+https://dev.angular.tw/guide/zoneless
+
+
+順序	分享內容	想讓聽眾理解的事情
+1	DOM Rendering	資料變更如何透過 Angular 反映到 DOM
+2	Zone.js	傳統 Angular 如何透過 Zone.js 偵測非同步任務並觸發 Change Detection
+3	Zoneless	Angular 如何在不依賴 Zone.js 的情況下觸發 Change Detection
+4	Signal	如何透過響應式依賴追蹤，明確通知 Angular 哪些 View 需要更新
+
+
+• Zone.js 只負責大喊「有人做完非同步事情了！」，但它不知道是誰做的，所以 Angular 只能盲目地由上到下檢查整棵元件樹。
+
+• Signal 帶來了細粒度（Fine-grained）的依賴追蹤。當一個 Signal 的值改變時，它精準地知道全域中「哪一個元件的哪一個 View」依賴了這個值。
