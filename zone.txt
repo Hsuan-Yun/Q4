@@ -1,4 +1,7 @@
 https://dev.angular.tw/guide/zoneless
+不使用 ZoneJS 的 Angular（Zoneless）
+https://medium.com/@gitesh08/understanding-angular-zone-js-vs-zoneless-6f619ef85bdd
+Understanding Angular Zone.js vs Zoneless
 
 
 順序	分享內容	想讓聽眾理解的事情
@@ -7,7 +10,91 @@ https://dev.angular.tw/guide/zoneless
 3	Zoneless	Angular 如何在不依賴 Zone.js 的情況下觸發 Change Detection
 4	Signal	如何透過響應式依賴追蹤，明確通知 Angular 哪些 View 需要更新
 
+DOM
+
 
 • Zone.js 只負責大喊「有人做完非同步事情了！」，但它不知道是誰做的，所以 Angular 只能盲目地由上到下檢查整棵元件樹。
 
 • Signal 帶來了細粒度（Fine-grained）的依賴追蹤。當一個 Signal 的值改變時，它精準地知道全域中「哪一個元件的哪一個 View」依賴了這個值。
+
+
+在 Zone.js 架構下，畫面更新有什麼不同？
+這裡才是最值得注意的地方。
+
+假設使用者修改了 price：
+this.price.set(200);
+
+
+在傳統 Zone.js 架構下：
+1. Signal 發出狀態變更通知。
+2. Angular 知道哪些 View 依賴這個 Signal，並標記需要更新。
+3. Angular 透過既有的 Change Detection 機制檢查及更新 View。
+也就是說，Signal 的依賴追蹤仍然有效，並不需要先移除 Zone.js 才能使用。
+
+但在 Zoneless 架構下，Signal 更新本身也能成為 Angular 排程 Change Detection 的明確通知來源，不必等待 Zone.js 偵測非同步任務。
+
+
+
+沒有 Zoneless，Signal 仍然有三個重要用途
+① 自動追蹤依賴關係
+例如：
+export class Product {
+  price = signal(100);
+  quantity = signal(2);
+
+  total = computed(() => this.price() * this.quantity());
+}
+
+
+當 price 或 quantity 改變時，total 會自動變成過期狀態，下一次讀取時重新計算。
+
+你不需要自己寫：
+this.total = this.price * this.quantity;
+
+
+也不需要在每個修改價格或數量的地方手動更新總價。
+② 衍生狀態管理
+computed() 可以讓我們根據既有狀態建立衍生資料。
+price = signal(100);
+quantity = signal(2);
+
+total = computed(() => this.price() * this.quantity());
+
+
+total 不需要獨立維護，它會隨著依賴的狀態變化而更新。
+③ 明確的狀態變更通知
+一般變數：
+title = 'Hello';
+
+update() {
+  this.title = 'Hello World';
+}
+
+
+Signal：
+title = signal('Hello');
+
+update() {
+  this.title.set('Hello World');
+}
+
+
+Signal 的 .set()、.update() 讓狀態變更有明確的語意，也能通知依賴它的響應式消費者。
+
+這不只對 Angular Template 有用，也能用於 computed()、effect() 等響應式邏輯。
+
+
+
+Zoneless 仍然需要 Change Detection。
+
+
+
+Zoneless 不要求一定使用 Signal。
+
+
+
+普通 JavaScript Property 被賦值，本身不會自動通知 Zoneless Angular。
+
+
+
+Observable 的 subscribe() 也不等於自動通知 Angular；要看更新方式是否有透過 Angular 可識別的通知機制。
